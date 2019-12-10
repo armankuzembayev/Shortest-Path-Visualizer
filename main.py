@@ -1,7 +1,7 @@
 import pygame
-from collections import deque
+from Dijkstra import *
+from Grid import *
 
-pygame.init()
 vec = pygame.Vector2
 GRIDWIDTH = 32
 GRIDHEIGHT = 32
@@ -22,61 +22,8 @@ def loadFiles():
         arrows[direction] = pygame.transform.rotate(arrow_img, vec(direction).angle_to(vec(1, 0)))
     return arrows, x_img, home_img
 
-
-class grid(object):
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.walls = []
-        self.directions = [vec(1, 0), vec(-1, 0), vec(0, 1), vec(0, -1),
-                           vec(1, 1), vec(-1, 1), vec(1, -1), vec(-1, -1)]
-
-    def drawGrid(self, screen):
-        for x in range(0, self.width, GRIDWIDTH):
-            pygame.draw.line(screen, (100, 100, 100), (x, 0), (x, self.height))
-        for y in range(0, self.height, GRIDHEIGHT):
-            pygame.draw.line(screen, (100, 100, 100), (0, y), (self.width, y))
-
-    def drawWalls(self, screen):
-        for wall in self.walls:
-            pygame.draw.rect(screen, (200, 0, 0), (wall.x * GRIDWIDTH, wall.y * GRIDHEIGHT, GRIDWIDTH, GRIDHEIGHT))
-
-    def constraintsForWalls(self, node):
-        return 0 <= node.x < self.width // GRIDWIDTH and 0 <= node.y < self.height // GRIDHEIGHT and node not in self.walls
-
-    def findNeigbors(self, node):
-        neighbors = [node + neighbor for neighbor in self.directions]
-        neighbors = filter(self.constraintsForWalls, neighbors)
-        return neighbors
-
-    def draw_icons(self, start, end, x_img, home_img):
-        end_center = (end.x * GRIDWIDTH + GRIDWIDTH / 2, end.y * GRIDHEIGHT + GRIDHEIGHT / 2)
-        screen.blit(x_img, x_img.get_rect(center=end_center))
-        start_center = (start.x * GRIDWIDTH + GRIDWIDTH / 2, start.y * GRIDHEIGHT + GRIDHEIGHT / 2)
-        screen.blit(home_img, home_img.get_rect(center=start_center))
-
-
 def vec2tuple(node):
     return (int(node.x), int(node.y))
-
-def bfs(graph, start, end):
-    path = {}
-    visited = []
-    visited.append(end)
-    path[vec2tuple(end)] = None
-    frontier = deque()
-    frontier.append(end)
-    while len(frontier) > 0:
-        n = frontier.popleft()
-        if n == start:
-            break
-        for node in graph.findNeigbors(n):
-            if vec2tuple(node) not in path:
-                visited.append(node)
-                frontier.append(node)
-                path[vec2tuple(node)] = n - node
-    return path, visited
-
 
 def main():
     arrows, end_img, home_img = loadFiles()
@@ -86,7 +33,8 @@ def main():
     start = vec(3, 20)
     end = vec(30, 2)
 
-    path, visited = bfs(g, start, end)
+    path, cost = Dijkstra(g, start, end)
+    # print(path[vec2tuple(vec(2, 21))])
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -102,7 +50,7 @@ def main():
                     end = pos
                 elif event.button == 2:
                     start = pos
-                path, visited = bfs(g, start, end)
+                path, cost = Dijkstra(g, start, end)
         screen.fill((0, 0, 0))
         g.drawGrid(screen)
         g.drawWalls(screen)
@@ -110,19 +58,21 @@ def main():
             x, y = node
             rect = pygame.Rect(x * GRIDWIDTH, y * GRIDHEIGHT, GRIDWIDTH, GRIDHEIGHT)
             pygame.draw.rect(screen, (30, 30, 30), rect)
-        current = start + path[vec2tuple(start)]
+        if vec2tuple(start) in path:
+            current = start + path[vec2tuple(start)]
         while current != end:
             x = current.x * GRIDWIDTH + GRIDWIDTH / 2
             y = current.y * GRIDHEIGHT + GRIDHEIGHT / 2
-            img = arrows[vec2tuple(path[(current.x, current.y)])]
+            a = vec2tuple(path[(current.x, current.y)])
+            img = arrows[a]
             screen.blit(img, img.get_rect(center=(x, y)))
             current = current + path[vec2tuple(current)]
         g.drawGrid(screen)
-        g.draw_icons(start, end, end_img, home_img)
+        g.draw_icons(screen, start, end, end_img, home_img)
         pygame.display.flip()
     pygame.quit()
 
 
 if __name__ == "__main__":
+    pygame.init()
     main()
-
