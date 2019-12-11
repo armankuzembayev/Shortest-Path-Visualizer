@@ -1,6 +1,7 @@
 import pygame
 from Dijkstra import *
 from Grid import *
+from AStar import *
 
 vec = pygame.Vector2
 GRIDWIDTH = 32
@@ -22,6 +23,7 @@ def loadFiles():
         arrows[direction] = pygame.transform.rotate(arrow_img, vec(direction).angle_to(vec(1, 0)))
     return arrows, x_img, home_img
 
+
 def vec2tuple(node):
     return (int(node.x), int(node.y))
 
@@ -33,12 +35,20 @@ def main():
     start = vec(3, 20)
     end = vec(30, 2)
 
-    path, cost = Dijkstra(g, start, end)
-    # print(path[vec2tuple(vec(2, 21))])
+    path = AStar(g, start, end)
+    astar = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if astar:
+                        astar = False
+                    else:
+                        astar = True
+
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = vec(pygame.mouse.get_pos()) // GRIDHEIGHT
                 if event.button == 1:
@@ -50,7 +60,11 @@ def main():
                     end = pos
                 elif event.button == 2:
                     start = pos
-                path, cost = Dijkstra(g, start, end)
+            if astar:
+                path = AStar(g, start, end)
+            else:
+                path = Dijkstra(g, start, end)
+
         screen.fill((0, 0, 0))
         g.drawGrid(screen)
         g.drawWalls(screen)
